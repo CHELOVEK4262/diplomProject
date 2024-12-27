@@ -1,0 +1,91 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+button {
+    margin: 2px;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    width: 300px;
+}
+
+input {
+    display: block;
+    margin-bottom: 10px;
+    width: 300px;
+    height: 20px;
+}
+
+.suggestions {
+    position: absolute;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 300px;
+}
+.suggestions div {
+    padding: 10px;
+    cursor: pointer;
+}
+.suggestions div:hover {
+    background-color: #f0f0f0;
+}
+#map {
+    display: flex;
+    justify-self: center;
+    width: 100%;
+    height: 500px;
+    margin-top: 20px;
+    border: 2px solid lightgray;
+}
+.autocomplete-container {
+    position: relative;
+}
+
+.menu {
+    display: flex;
+    border: 2px solid lightgray;
+    padding: 20px;
+}
+
+.container_1 {
+    /*border: 1px solid black;*/
+}
+
+.container_2 {
+    /*border: 1px solid black;*/
+    width: 80px;
+}
+
+.add_in_favarit {
+    display: flex;
+    width: 25px;
+    height: 25px;
+    justify-content: center;
+    align-items: center;
+    margin: 10px;
+}
+
+.fav_routes {
+    margin: 10px;
+}
+
+.options {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.options-input {
+    width: 150px;
+}
+
+.options-dropdown {
+    width: 130px;
+    height: 25px;
+}

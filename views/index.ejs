@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расчет затрат на рейс</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="icon" href="img/logo.svg" type="image/x-icon"/>
+
+    <script src="Db.js"></script>
+</head>
+<body>
+    <div class="menu">
+        <div class="container_1">
+            <form id="distance-form">
+                <div class="autocomplete-container">
+                    <label for="start">Пункт загрузки:</label>
+                    <input type="text" id="start" placeholder="Введите адрес начальной точки" required autocomplete="off">
+                    <div style="z-index: 100;" id="start-suggestions" class="suggestions"></div>
+                </div>
+                <br><br>
+                <div class="autocomplete-container">
+                    <label for="end">Пункт выгрузки:</label>
+                    <input type="text" id="end" placeholder="Введите адрес конечной точки" required autocomplete="off">
+                    <div style="z-index: 80;" id="end-suggestions" class="suggestions"></div>
+                </div>
+                <br>
+                <button style="width: 200px;" type="submit">Рассчитать</button>
+            </form>
+        </div>
+
+        <div class="container_2">
+            <div class="add_in_favarit"><img style="width: 25px; height: 25px;" src="img/favourite.webp" alt="избранное"></div>
+        </div>
+        <div class="options">
+            <div>
+                <label class="options-input">Автомобиль</label>
+                <select class="options-dropdown" id="truck-dropdown">
+                    <option value="10">Скания 1тесттест (10 л/км)</option>
+                    <option value="6">Скания 2тесттест (6 л/км)</option>
+                    <option value="15">Вольво 1тесттест (15 л/км)</option>
+                    <option value="7">Вольво 2тесттест (7 л/км)</option>
+                </select>
+            </div>
+            <div style="margin-top: 11px;">
+                <label class="options-input">Стоимость топлива (за литр)</label>
+                <input class="options-input" type="number" id="fuel-cost" value="0.00" step="0.01">
+            </div>
+            <div>
+                <label class="options-input">Стоимость платных дорог</label>
+                <input class="options-input" type="number" id="toll-cost" value="0.00" step="0.01">
+            </div>
+        </div>
+        <div class="options">
+            <div>
+                <label class="options-input">Стоимость стоянок</label>
+                <input class="options-input" type="number" id="parking-cost" value="0.00" step="0.01">
+            </div>
+            <div>
+                <label class="options-input">Питание водителя</label>
+                <input class="options-input" type="number" id="driver-food" value="0.00" step="0.01">
+            </div>
+        </div>
+    </div>
+
+    <h3>Готовые расчеты:</h3>
+    <p id="output"><strong>Расстояние: </strong><span id="total-dist">0.00</span> км.</p>
+    <p id="output"><strong>Итоговая стоимость: </strong><span id="total-cost">0.00</span> руб.</p>
+
+    <div style="z-index: 50;" id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="/js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let distance = 0; // Расстояние в км
+
+            function calculateCosts() {
+                // Получаем значения из формы
+                const fuelCost = parseFloat(document.getElementById('fuel-cost').value) || 0;
+                const tollCost = parseFloat(document.getElementById('toll-cost').value) || 0;
+                const parkingCost = parseFloat(document.getElementById('parking-cost').value) || 0;
+                const driverFood = parseFloat(document.getElementById('driver-food').value) || 0;
+                const fuelUsage = parseFloat(document.getElementById('truck-dropdown').value) || 0;
+
+                // Проверяем, что расстояние известно
+                if (distance <= 0) {
+                    document.getElementById('total-cost').innerText = '0.00';
+                    return;
+                }
+
+                // Расчет стоимости топлива
+                const fuelExpenses = (distance * fuelUsage / 100) * fuelCost;
+
+                // Общая стоимость рейса
+                const totalCost = fuelExpenses + tollCost + parkingCost + driverFood;
+
+                // Обновляем вывод
+                document.getElementById('total-cost').innerText = totalCost.toFixed(2);
+                document.getElementById('total-dist').innerText = distance.toFixed(2);
+            }
+
+            // Связываем расчет с изменением значений
+            document.getElementById('distance-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                calculateCosts();
+            });
+
+            // Интеграция с картой
+            window.calculateDistance = function(map, startCoords, endCoords) {
+                if (!startCoords || !endCoords) {
+                    alert('Не заданы обе точки для маршрута.');
+                    return;
+                }
+
+                map.eachLayer(function (layer) {
+                    if (layer instanceof L.Polyline) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                fetch(`https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson`)
+                    .then(response => response.json())
+                    .then(routeData => {
+                        if (routeData.routes.length === 0) {
+                            alert('Не удалось построить маршрут.');
+                            return;
+                        }
+
+                        const route = routeData.routes[0];
+                        distance = route.distance / 1000; // В километрах
+
+                        const routeCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                        const polyline = L.polyline(routeCoords, { color: 'blue' }).addTo(map);
+                        map.fitBounds(polyline.getBounds());
+
+                        // Автоматический расчет при обновлении маршрута
+                        calculateCosts();
+                    });
+            };
+        });
+    </script>
+</body>
+</html>
