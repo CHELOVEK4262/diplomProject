@@ -31,16 +31,112 @@
         </div>
 
         <div class="container_2">
-            <div class="add_in_favarit"><img style="width: 25px; height: 25px;" src="img/favourite.webp" alt="избранное"></div>
+            <div onclick="openModal()" class="add_in_favarit"><img style="width: 25px; height: 25px;" src="img/favourite.webp" alt="избранное"></div>
         </div>
+
+        <script>
+            function openModal()
+            {
+                document.getElementById("modal").style.display = "unset";
+            }
+
+            function closeModal()
+            {
+                document.getElementById("modal").style.display = "none";
+            }
+        </script>
+
+        <div class="modal" id="modal">
+            <div class="modalButtonsDiv">
+                <button class="modalButton">Добавить</button>
+                <button class="modalButton">Редактировать</button>
+                <button id="deleteButton" class="modalButton">Удалить</button>
+                <button class="modalButton">Использовать</button>
+            </div>
+            <div class="modalTable" style="height: 470px;">
+                <table class="routesTable" cellspacing=0 style="width: 550px;">
+                    <thead><tr>
+                        <th>Пункт загрузки</th>
+                        <th>Пункт выгрузки</th>
+                    </tr></thead>
+                    <tbody>
+                        <% routes.forEach(route => { %>
+                            <tr>
+                                <td><%= route.StartLocation %></td>
+                                <td><%= route.EndLocation %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+
+                <script>
+                    const table = document.querySelector('.routesTable');
+                    const deleteButton = document.getElementById('deleteButton');
+                    let selectedRow = null;
+            
+                    // Обработчик клика по строкам таблицы
+                    table.addEventListener('click', (event) => {
+                        const clickedRow = event.target.closest('tr');
+                        if (!clickedRow || clickedRow.tagName === 'THEAD') return;
+            
+                        // Убираем выделение со всех строк
+                        document.querySelectorAll('.routesTable tr').forEach(row => {
+                            row.classList.remove('selected');
+                        });
+            
+                        // Выделяем выбранную строку
+                        clickedRow.classList.add('selected');
+                        selectedRow = clickedRow;
+            
+                        // Активируем кнопку удаления
+                        deleteButton.disabled = false;
+                    });
+            
+                    // Обработчик клика по кнопке "Удалить"
+                    deleteButton.addEventListener('click', () => {
+                        if (!selectedRow) return;
+            
+                        const StartLocation = selectedRow.dataset.StartLocation;
+                        const EndLocation = selectedRow.dataset.EndLocation;
+            
+                        fetch('/delete-route', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ StartLocation: StartLocation, EndLocation: EndLocation }),
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Ошибка при удалении маршрута');
+                                }
+                                // Удаляем строку из таблицы
+                                selectedRow.remove();
+                                selectedRow = null;
+                                deleteButton.disabled = true;
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                alert('Не удалось удалить маршрут');
+                            });
+                    });
+                </script>
+
+            </div>
+            <div class="closeButton" onclick="closeModal()">
+                <img src="img/close-sign.png" style="height: 20px;">
+            </div>
+        </div>
+
         <div class="options">
             <div>
                 <label class="options-input">Автомобиль</label>
                 <select class="options-dropdown" id="truck-dropdown">
-                    <option value="10">Скания 1тесттест (10 л/км)</option>
-                    <option value="6">Скания 2тесттест (6 л/км)</option>
-                    <option value="15">Вольво 1тесттест (15 л/км)</option>
-                    <option value="7">Вольво 2тесттест (7 л/км)</option>
+                    <% trucks.forEach(truck => { %>
+                        <option value="<%= truck.fuel_efficiency %>">
+                            <%= truck.TruckName %> [<%= truck.TruckRegNumber%>] (<%= truck.TruckFuelUsage %> л/100 км)
+                        </option>
+                    <% }) %>
                 </select>
             </div>
             <div style="margin-top: 11px;">
@@ -57,11 +153,119 @@
                 <label class="options-input">Стоимость стоянок</label>
                 <input class="options-input" type="number" id="parking-cost" value="0.00" step="0.01">
             </div>
-            <div>
+            <div style="padding-top: 18px;">
                 <label class="options-input">Питание водителя</label>
                 <input class="options-input" type="number" id="driver-food" value="0.00" step="0.01">
             </div>
         </div>
+            <div class="history-table">
+                <table cellspacing=0>
+                    <thead><tr>
+                        <th>Дата</th>
+                        <th>Загрузка</th>
+                        <th>Выгрузка</th>
+                        <th>Расстояние</th>
+                        <th>Стоимость</th>
+                        <th>Автомобиль</th>
+                    </tr></thead>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>2</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>5</td>
+                        <td>6</td>
+                    </tr>
+                </table>
+            </div>
     </div>
 
     <h3>Готовые расчеты:</h3>

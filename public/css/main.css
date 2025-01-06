@@ -61,6 +61,7 @@ input {
 .container_2 {
     /*border: 1px solid black;*/
     width: 80px;
+    height: 20px;
 }
 
 .add_in_favarit {
@@ -70,6 +71,11 @@ input {
     justify-content: center;
     align-items: center;
     margin: 10px;
+}
+
+.add_in_favarit:hover {
+    background-color: #ccc;
+    border-radius: 3px;
 }
 
 .fav_routes {
@@ -86,6 +92,102 @@ input {
 }
 
 .options-dropdown {
-    width: 130px;
+    width: 155px;
     height: 25px;
+}
+
+table {
+    width: 820px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.history-table {
+    overflow-y: scroll;
+    height: 220px;
+    border-collapse: collapse;
+    border: 1px solid lightgray;
+    margin-left: 20px;
+}
+
+td, th {
+    border-collapse: collapse;
+    margin: 0px;
+    padding: 0px;
+    border: 1px solid lightgray;
+    height: 25px;
+}
+
+.history-table thead th 
+{ 
+    position: sticky; 
+    top: 0; 
+    z-index: 1;
+    background-color: whitesmoke;
+}
+
+.modal {
+    display: none;
+    position: absolute;
+    margin-left: 350px;
+    margin-top: -10px;
+    z-index: 200;
+    width: 800px;
+    height: 500px;
+    background-color: white;
+    border: 1px solid lightgray;
+    border-radius: 10px;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+.closeButton {
+    display: flex;
+    justify-self: end;
+    height: 20px;
+    width: 20px;
+    margin: 7px;
+}
+
+.closeButton:hover {
+    cursor: pointer;
+}
+
+.modalTable {
+    margin-left: 200px;
+    margin-top: 13px;
+    position: absolute;
+    overflow-y: scroll;
+}
+
+.modalTable thead th 
+{ 
+    position: sticky; 
+    top: 0; 
+    z-index: 1;
+    background-color: whitesmoke;
+}
+
+.modalTable, td, th {
+    border: 1px solid lightgray;
+}
+
+.modalTable tr:hover {
+    background-color: rgb(236, 236, 236);
+}
+
+.modalTable tr.selected {
+    background-color: rgb(236, 236, 236);
+}
+
+.modalButtonsDiv {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    margin: 13px;
+}
+
+.modalButton {
+    width: 150px;
+    margin: 10px;
+    height: 35px;
 }
