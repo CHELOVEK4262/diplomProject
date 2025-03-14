@@ -11,6 +11,18 @@
     <script src="Db.js"></script>
 </head>
 <body>
+
+    <div>
+        <% if (user) { %>
+            <div class="user-info">
+                <span id="current-user">Привет, <span id="username"> <%= user.login %></span>!</span> <!-- Используем login -->
+            </div>
+        <% } else { %>
+            <p>Пожалуйста, войдите в систему.</p>
+        <% } %>        
+    </div>
+    <br>    
+
     <div class="menu">
         <div class="container_1">
             <form id="distance-form">
@@ -48,10 +60,10 @@
 
         <div class="modal" id="modal">
             <div class="modalButtonsDiv">
-                <button class="modalButton">Добавить</button>
-                <button class="modalButton">Редактировать</button>
-                <button id="deleteButton" class="modalButton">Удалить</button>
-                <button class="modalButton">Использовать</button>
+                <!-- <button class="modalButton">Добавить</button> -->
+                <!-- <button class="modalButton">Редактировать</button> -->
+                <!-- <button id="deleteButton" class="modalButton">Удалить</button> -->
+                <button id="useButton" class="modalButton">Использовать</button>
             </div>
             <div class="modalTable" style="height: 470px;">
                 <table class="routesTable" cellspacing=0 style="width: 550px;">
@@ -70,6 +82,51 @@
                 </table>
 
                 <script>
+                    const table = document.querySelector('.routesTable');
+                    const useButton = document.getElementById('useButton');
+                    const startInput = document.getElementById('start');
+                    const endInput = document.getElementById('end');
+                    let selectedRow = null;
+            
+                    // Обработчик клика по строкам таблицы
+                    table.addEventListener('click', (event) => {
+                        const clickedRow = event.target.closest('tr');
+                        if (!clickedRow || clickedRow.tagName === 'THEAD') return;
+            
+                        // Убираем выделение со всех строк
+                        document.querySelectorAll('.routesTable tr').forEach(row => {
+                            row.classList.remove('selected');
+                        });
+            
+                        // Выделяем выбранную строку
+                        clickedRow.classList.add('selected');
+                        selectedRow = clickedRow;
+            
+                        // Активируем кнопку "Использовать"
+                        useButton.disabled = false;
+                    });
+            
+                    // Обработчик клика по кнопке "Использовать"
+                    useButton.addEventListener('click', () => {
+    if (!selectedRow) return;
+
+    // Получаем данные из выделенной строки
+    const loadingPoint = selectedRow.cells[0].textContent.trim();
+    const unloadingPoint = selectedRow.cells[1].textContent.trim();
+
+    // Заполняем поля ввода
+    startInput.value = loadingPoint;
+    endInput.value = unloadingPoint;
+
+    // Конвертируем адреса в координаты и обновляем маршрут
+    convertToCoords('start', true);
+    convertToCoords('end', false);
+    closeModal();
+});
+
+                </script>
+
+                <!-- <script>
                     const table = document.querySelector('.routesTable');
                     const deleteButton = document.getElementById('deleteButton');
                     let selectedRow = null;
@@ -120,7 +177,7 @@
                                 alert('Не удалось удалить маршрут');
                             });
                     });
-                </script>
+                </script> -->
 
             </div>
             <div class="closeButton" onclick="closeModal()">
@@ -158,7 +215,7 @@
                 <input class="options-input" type="number" id="driver-food" value="0.00" step="0.01">
             </div>
         </div>
-            <div class="history-table">
+            <!-- <div class="history-table">
                 <table cellspacing=0>
                     <thead><tr>
                         <th>Дата</th>
@@ -168,109 +225,184 @@
                         <th>Стоимость</th>
                         <th>Автомобиль</th>
                     </tr></thead>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                        <td>5</td>
-                        <td>6</td>
-                    </tr>
-                </table>
+                    <tbody>
+                        <% history.forEach(history => { %>
+                            <tr>
+                                <td><%= new Date(history.RequestDate).toLocaleString('ru-RU', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) %></td>
+                                <td><%= history.StartPoint %></td>
+                                <td><%= history.EndPoint %></td>
+                                <td><%= history.Distance %></td>
+                                <td><%= history.TotalCost %></td>
+                                <td><%= history.UsedVehicle %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table> -->
             </div>
     </div>
 
     <h3>Готовые расчеты:</h3>
     <p id="output"><strong>Расстояние: </strong><span id="total-dist">0.00</span> км.</p>
     <p id="output"><strong>Итоговая стоимость: </strong><span id="total-cost">0.00</span> руб.</p>
+
+    <div>
+        <button onclick="exportDoc()">Экспортировать</button>
+        <select id="export_select">
+            <option value="doc">.doc</option>
+            <option value="docx">.docx</option>
+            <option value="pdf">.pdf</option>
+        </select>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="/public/fonts/PTSans-normal.js"></script>
+
+    <script>
+        function exportDoc()
+        {
+            let select = document.getElementById('export_select');
+            let selectedOption = select.options[select.selectedIndex].value;
+
+            let routeStart = document.getElementById('start').value;
+            let routeEnd = document.getElementById('end').value;
+
+            let truckSelect = document.getElementById('truck-dropdown');
+            let truck = truckSelect.options[truckSelect.selectedIndex].innerText.trim();
+
+            let fuelCost = document.getElementById('fuel-cost').value;
+            let tollCost = document.getElementById('toll-cost').value;
+            let parkingCost = document.getElementById('parking-cost').value;
+            let driverFood = document.getElementById('driver-food').value;
+
+            let distance = document.getElementById('total-dist').innerText;
+            let totalCost = document.getElementById('total-cost').innerText;
+
+            let docContent = `Рейс: ${routeStart} - ${routeEnd}\nРасстояние: ${distance} км\nГрузовик: ${truck}\n\nЗатраты\n- Топливо: ${fuelCost}\n- Платные дороги: ${tollCost}\n- Стоянки: ${parkingCost}\n- Питание водителя: ${driverFood}\n\nИтоговая стоимость: ${totalCost} руб.`;
+
+            if (selectedOption === 'doc') 
+            {
+                console.log(selectedOption)
+                exportToDoc(docContent);
+            } 
+            else if (selectedOption === 'docx') 
+            {
+                console.log(selectedOption)
+                exportToDocx(docContent);
+            } 
+            else if (selectedOption === 'pdf') 
+            {
+                console.log(selectedOption)
+                exportToPDF(docContent);
+            } 
+            else 
+            {
+                console.log(selectedOption)
+                console.log('Неверный формат экспорта');
+            }
+
+            // Функция экспорта в .doc
+            function exportToDoc(content) {
+    // HTML-шаблон с указанием кодировки UTF-8
+    const htmlContent = `
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body>
+            <p>${content.replace(/\n/g, "<br>")}</p>
+        </body>
+        </html>
+    `;
+
+    // Создаём Blob с правильным MIME-типом
+    const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword;charset=utf-8' });
+
+    // Создаём ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'document.doc';
+    link.click();
+}
+
+
+// Функция экспорта в .docx
+function exportToDocx(content) {
+    const zip = new JSZip();
+    
+    // Создаём правильную структуру DOCX
+    zip.file("[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8"?>
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+            <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+            <Default Extension="xml" ContentType="application/xml"/>
+            <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+        </Types>`);
+    
+    zip.folder("_rels").file(".rels", `<?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+            <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+        </Relationships>`);
+    
+    // Разбиваем текст на абзацы, добавляя пробелы между строками
+    const paragraphs = content.split('\n').map(line => `
+        <w:p>
+            <w:r>
+                <w:t xml:space="preserve">${line}</w:t>
+            </w:r>
+        </w:p>
+    `).join('\n');
+    
+    zip.folder("word").file("document.xml", `<?xml version="1.0" encoding="UTF-8"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:body>
+                ${paragraphs}
+            </w:body>
+        </w:document>`);
+    
+    zip.folder("word/_rels").file("document.xml.rels", `<?xml version="1.0" encoding="UTF-8"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`);
+    
+    zip.generateAsync({ type: 'blob' }).then(function (blob) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'document.docx';
+        link.click();
+    });
+}
+
+
+async function exportToPDF(content) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    console.log(doc.getFontList());
+
+    doc.setFont("helvetica", "normal"); // Используем шрифт с поддержкой кириллицы
+    doc.setFontSize(10);
+
+    const lines = content.split("\n");
+    let y = 10;
+
+    lines.forEach(line => {
+        doc.text(line, 10, y, { maxWidth: 180 });
+        y += 10;
+    });
+
+    doc.save("document.pdf");
+}
+
+
+
+
+
+        } 
+    </script>
 
     <div style="z-index: 50;" id="map"></div>
 
@@ -295,7 +427,7 @@
                 }
 
                 // Расчет стоимости топлива
-                const fuelExpenses = (distance * fuelUsage / 100) * fuelCost;
+                const fuelExpenses = fuelCost;
 
                 // Общая стоимость рейса
                 const totalCost = fuelExpenses + tollCost + parkingCost + driverFood;

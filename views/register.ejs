@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+    <div class="form" style="height: 420px;">
+        <h1>Регистрация</h1>
+        <div class="inputs">
+            <label for="emailInput">E-mail</label>
+            <input id="emailInput" type="text" required autocomplete="email">
+            <span style="margin-bottom: 15px;"></span>
+
+            <label for="loginInput">Логин</label>
+            <input id="loginInput" type="text" required>
+            <span style="margin-bottom: 15px;"></span>
+
+            <label for="passwordInput">Пароль</label>
+            <input id="passwordInput" type="text" required>
+            <span style="margin-bottom: 15px;"></span>
+
+            <label for="confirmPasswordInput">Повтор пароля</label>
+            <input id="confirmPasswordInput" type="text" required>
+        </div>
+        <div>
+            <button id="registerBtn" style="width: 220px;">Зарегистрироваться</button>
+        </div>
+        <div>
+            <a href="/">Вход</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("registerBtn").addEventListener("click", async function() {
+            const email = document.getElementById("emailInput").value;
+            const login = document.getElementById("loginInput").value;
+            const password = document.getElementById("passwordInput").value;
+            const confirmPassword = document.getElementById("confirmPasswordInput").value;
+
+            if (!email || !login || !password || !confirmPassword) {
+                alert("Заполните все поля!");
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert("Пароли не совпадают!");
+                return;
+            }
+
+            const response = await fetch("/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, login, password, confirmPassword })
+            });
+
+            const result = await response.text();
+            alert(result);
+
+            if (response.ok) {
+                window.location.href = "/";
+            }
+        });
+    </script>
+</body>
+</html>

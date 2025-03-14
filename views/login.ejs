@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>Авторизация</title>
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+    <div class="form">
+        <h1>Вход</h1>
+        <div class="inputs">
+            <label for="loginInput">Ваш e-mail или логин</label>
+            <input id="loginInput" type="text">
+            <span style="margin-bottom: 15px;"></span>
+
+            <label for="passwordInput">Ваш пароль</label>
+            <input id="passwordInput" type="password">
+        </div>
+        <div class="rememberMy">
+            <input type="checkbox" id="rememberMe">
+            <p>Запомнить меня</p>
+        </div>
+        <div>
+            <button id="loginBtn">Войти</button>
+        </div>
+        <div>
+            <a href="register">Регистрация</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("loginBtn").addEventListener("click", async function() {
+            const login = document.getElementById("loginInput").value;
+            const password = document.getElementById("passwordInput").value;
+
+            if (!login || !password) {
+                alert("Заполните все поля!");
+                return;
+            }
+
+            const response = await fetch("/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ login, password })
+            });
+
+            const result = await response.json();
+            alert(result.message);
+
+            if (response.ok) {
+                window.location.href = result.redirectTo; // Перенаправление на нужную страницу
+            }
+        });
+    </script>
+</body>
+</html>
