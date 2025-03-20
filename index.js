@@ -149,7 +149,14 @@ app.get('/admin', (req, res) => {
         //     return res.status(403).send('Доступ запрещен. Вы не администратор.');
         // }
 
-        res.render('admin'); // Рендерим страницу администратора
+        Promise.all([getUsersFromDB(),getTrucksFromDB(), getRoutesFromDB()])
+        .then(([users, trucks, routes]) => {
+            res.render('admin', { users, trucks, routes });
+        })
+        .catch(err => {
+            console.error('Error fetching data from database:', err);
+            res.status(500).send('Error fetching data');
+        });
     });
 });
 

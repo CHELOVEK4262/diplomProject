@@ -2,9 +2,93 @@
 <html lang="en">
 <head>
     <title>Администраторская панель</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        tr:hover {
+            background-color: rgb(241, 241, 241);
+        }
+
+        td, th {
+            padding: 3px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Добро пожаловать, Администратор!</h1>
-    <p>Здесь находится информация, доступная только для администраторов.</p>
+    <h2>Пользователи</h2>
+    <table class="routesTable" cellspacing=0 style="width: 550px;">
+        <thead><tr>
+            <th>E-mail</th>
+            <th>Логин</th>
+            <th>Роль</th>
+        </tr></thead>
+        <tbody>
+            <% users.forEach(user => { %>
+                <tr>
+                    <td><%= user.email %></td>
+                    <td><%= user.login %></td>
+                    <td><%= user.roll %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <div>
+        <br>
+        <button>Удалить</button>
+        <button>Изменить роль</button>
+    </div>
+
+    <br>
+    <hr>
+
+    <h2>Автомобили</h2>
+    <table class="routesTable" cellspacing=0 style="width: 550px;">
+        <thead><tr>
+            <th>Название</th>
+            <th>Гос. номер</th>
+            <th>Расход топлива</th>
+        </tr></thead>
+        <tbody>
+            <% trucks.forEach(truck => { %>
+                <tr>
+                    <td><%= truck.TruckName %></td>
+                    <td><%= truck.TruckRegNumber %></td>
+                    <td><%= truck.TruckFuelUsage %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <div>
+        <br>
+        <button>Добавить</button>
+        <button>Удалить</button>
+        <button>Редактировать</button>
+    </div>
+
+    <br>
+    <hr>
+
+    <h2>Маршруты</h2>
+    <table class="routesTable" cellspacing=0 style="width: 550px;">
+        <thead><tr>
+            <th>Пункт загрузки</th>
+            <th>Пункт выгрузки</th>
+        </tr></thead>
+        <tbody>
+            <% routes.forEach(route => { %>
+                <tr>
+                    <td><%= route.StartLocation %></td>
+                    <td><%= route.EndLocation %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <div>
+        <br>
+        <button>Добавить</button>
+        <button>Удалить</button>
+        <button>Редактировать</button>
+    </div>
+
+
 </body>
 </html>
