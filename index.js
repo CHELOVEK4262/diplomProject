@@ -1,59 +1,69 @@
-const express = require('express')
-const mysql = require('mysql2')
+const express = require('express');
+const mysql = require('mysql2/promise'); // Используем promise-based интерфейс
 const bcrypt = require('bcrypt');
+const session = require('express-session');
 
+// Создаем пул соединений с БД
 const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
-    password:"09122005Ab",
-    database: 'transpcalc'
-})
-
-const session = require('express-session');
-
-
-
-const app = express()
-
-app.set('view engine', 'ejs')
-app.use(express.static('public'))
-app.use(express.json())
-
-
-app.get('/', (req, res) => {
-    Promise.all([getUsersFromDB()])
-        .then(([users]) => {
-            res.render('login', { users });
-        })
-        .catch(err => {
-            console.error('Error fetching data from database:', err);
-            res.status(500).send('Error fetching data');
-        });
+    password: "09122005ABc", // В реальном приложении используйте переменные окружения
+    database: 'transpcalc',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
+const app = express();
+
+// Настройки приложения
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Настройка сессий
 app.use(session({
-    secret: "supersecretkey",  // Используйте сложный секретный ключ
+    secret: "supersecretkey", // В продакшене используйте более сложный ключ
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }  // Убедитесь, что secure=false, если используете http
+    cookie: { 
+        secure: false, // true, если используете HTTPS
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 часа
+    }
 }));
 
+// Middleware для проверки аутентификации
+const requireAuth = (req, res, next) => {
+    if (!req.session.user) {
+        return res.redirect('/');
+    }
+    next();
+};
 
-app.get('/register', (req, res) => {
-    Promise.all([getUsersFromDB()])
-        .then(([users]) => {
-            res.render('register', { users });
-        })
-        .catch(err => {
-            console.error('Error fetching data from database:', err);
-            res.status(500).send('Error fetching data');
-        });
+// Middleware для проверки прав администратора
+const requireAdmin = (req, res, next) => {
+    if (req.session.user?.role !== 'admin') {
+        return res.status(403).send('Доступ запрещен');
+    }
+    next();
+};
+
+// Главная страница (логин)
+app.get('/', (req, res) => {
+    if (req.session.user) {
+        return res.redirect(req.session.user.role === 'admin' ? '/admin' : '/main');
+    }
+    res.render('login');
 });
 
+// Страница регистрации
 app.get('/register', (req, res) => {
     res.render('register');
 });
 
+// Обработка регистрации
 app.post('/register', async (req, res) => {
     const { email, login, password, confirmPassword } = req.body;
 
@@ -67,218 +77,256 @@ app.post('/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        const query = 'INSERT INTO users (email, login, password) VALUES (?, ?, ?)';
-        pool.query(query, [email, login, hashedPassword], (err, results) => {
-            if (err) {
-                console.error('Error inserting user:', err);
-                return res.status(500).send('Error registering user');
-            }
-            res.status(201).send('Пользователь успешно зарегистрирован');
-        });
+        await pool.query(
+            'INSERT INTO users (email, login, password) VALUES (?, ?, ?)',
+            [email, login, hashedPassword]
+        );
+        res.status(201).send('Пользователь успешно зарегистрирован');
     } catch (error) {
-        console.error('Error hashing password:', error);
-        res.status(500).send('Error processing request');
+        console.error('Ошибка регистрации:', error);
+        res.status(500).send('Ошибка при регистрации пользователя');
     }
 });
 
-app.post('/login', (req, res) => {
+// Обработка входа
+app.post('/login', async (req, res) => {
     const { login, password } = req.body;
 
     if (!login || !password) {
         return res.status(400).json({ message: "Все поля обязательны" });
     }
 
-    const query = 'SELECT * FROM users WHERE email = ? OR login = ?';
-    pool.query(query, [login, login], async (err, results) => {
-        if (err) {
-            console.error('Ошибка при поиске пользователя:', err);
-            return res.status(500).json({ message: "Ошибка сервера" });
-        }
+    try {
+        const [users] = await pool.query(
+            'SELECT * FROM users WHERE email = ? OR login = ?', 
+            [login, login]
+        );
 
-        if (results.length === 0) {
+        if (users.length === 0) {
             return res.status(400).json({ message: "Неправильный логин или пароль" });
         }
 
-        const user = results[0];
+        const user = users[0];
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
             return res.status(400).json({ message: "Неправильный логин или пароль" });
         }
 
-        // Сохраняем информацию о пользователе в сессии
-        req.session.user = { id: user.id, login: user.login, role: user.roll }; // Добавляем роль пользователя
+        req.session.user = { 
+            id: user.id, 
+            login: user.login, 
+            role: user.roll || 'user' 
+        };
 
-        // Если у пользователя роль admin, перенаправляем на страницу админа
-        if (user.roll === 'admin') {
-            return res.json({ message: "Успешный вход", redirectTo: '/admin' });
-        }
-
-        // В противном случае перенаправляем на главную страницу
-        res.json({ message: "Успешный вход", redirectTo: '/main' });
-    });
+        res.json({ 
+            message: "Успешный вход", 
+            redirectTo: user.roll === 'admin' ? '/admin' : '/main' 
+        });
+    } catch (err) {
+        console.error('Ошибка входа:', err);
+        res.status(500).json({ message: "Ошибка сервера" });
+    }
 });
 
-
-
+// Выход
 app.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
+    req.session.destroy(err => {
         if (err) {
+            console.error('Ошибка при выходе:', err);
             return res.status(500).send('Ошибка при выходе');
         }
         res.redirect('/');
     });
 });
 
-
-app.get('/admin', (req, res) => {
-    if (!req.session.user) {
-        return res.status(403).send('Доступ запрещен. Войдите в систему.');
-    }
-
-    const query = 'SELECT roll FROM users WHERE id = ?';
-    pool.query(query, [req.session.user.id], (err, results) => {
+// Админ-панель
+app.get('/admin', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const [users, trucks, routes] = await Promise.all([
+            getUsersFromDB(),
+            getTrucksFromDB(),
+            getRoutesFromDB()
+        ]);
         
-        if (err) {
-            console.error('Ошибка при получении роли пользователя:', err);
-            return res.status(500).send('Ошибка сервера');
+        res.render('admin', { 
+            users, 
+            trucks, 
+            routes, 
+            user: req.session.user 
+        });
+    } catch (err) {
+        console.error('Ошибка загрузки админ-панели:', err);
+        res.status(500).send('Ошибка загрузки данных');
+    }
+});
+
+// Главная страница пользователя
+app.get('/main', requireAuth, async (req, res) => {
+    try {
+        const [trucks, routes, history] = await Promise.all([
+            getTrucksFromDB(),
+            getRoutesFromDB(),
+            getHistoryFromDB()
+        ]);
+        
+        res.render('index', { 
+            trucks, 
+            routes, 
+            history, 
+            user: req.session.user 
+        });
+    } catch (err) {
+        console.error('Ошибка загрузки главной страницы:', err);
+        res.status(500).send('Ошибка загрузки данных');
+    }
+});
+
+// API для работы с пользователями
+app.route('/admin/users/:id?')
+    .post(requireAdmin, async (req, res) => {
+        try {
+            const { email, login, password, role } = req.body;
+            const hashedPassword = await bcrypt.hash(password, 10);
+            
+            await pool.query(
+                'INSERT INTO users (email, login, password, roll) VALUES (?, ?, ?, ?)',
+                [email, login, hashedPassword, role]
+            );
+            res.sendStatus(201);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
         }
-
-        // if (results.length === 0 || results[0].roll !== 'admin') {
-        //     return res.status(403).send('Доступ запрещен. Вы не администратор.');
-        // }
-
-        Promise.all([getUsersFromDB(),getTrucksFromDB(), getRoutesFromDB()])
-        .then(([users, trucks, routes]) => {
-            res.render('admin', { users, trucks, routes });
-        })
-        .catch(err => {
-            console.error('Error fetching data from database:', err);
-            res.status(500).send('Error fetching data');
-        });
+    })
+    .put(requireAdmin, async (req, res) => {
+        try {
+            const { role } = req.body;
+            await pool.query(
+                'UPDATE users SET roll = ? WHERE id = ?', 
+                [role, req.params.id]
+            );
+            res.sendStatus(200);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
+    })
+    .delete(requireAdmin, async (req, res) => {
+        try {
+            await pool.query('DELETE FROM users WHERE ID = ?', [req.params.id]);
+            res.sendStatus(200);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
     });
-});
+
+// API для работы с автомобилями
+app.route('/admin/trucks/:id?')
+    .post(requireAdmin, async (req, res) => {
+        try {
+            const { name, regNumber, fuelUsage } = req.body;
+            await pool.query(
+                'INSERT INTO trucks (TruckName, TruckRegNumber, TruckFuelUsage) VALUES (?, ?, ?)',
+                [name, regNumber, fuelUsage]
+            );
+            res.sendStatus(201);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
+    })
+    .put(requireAdmin, async (req, res) => {
+        try {
+            const { name, regNumber, fuelUsage } = req.body;
+            await pool.query(
+                'UPDATE trucks SET TruckName = ?, TruckRegNumber = ?, TruckFuelUsage = ? WHERE TruckID = ?',
+                [name, regNumber, fuelUsage, req.params.id]
+            );
+            res.sendStatus(200);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
+    })
+    .delete(requireAdmin, async (req, res) => {
+        try {
+            await pool.query('DELETE FROM trucks WHERE TruckID = ?', [req.params.id]);
+            res.sendStatus(200);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
+    });
+
+// API для работы с маршрутами
+app.route('/admin/routes/:id?')
+    .post(requireAdmin, async (req, res) => {
+        try {
+            const { startLocation, endLocation } = req.body;
+            await pool.query(
+                'INSERT INTO routes (StartLocation, EndLocation) VALUES (?, ?)',
+                [startLocation, endLocation]
+            );
+            res.sendStatus(201);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
+    })
+    .put(requireAdmin, async (req, res) => {
+        try {
+            const { startLocation, endLocation } = req.body;
+            await pool.query(
+                'UPDATE routes SET StartLocation = ?, EndLocation = ? WHERE RouteID = ?',
+                [startLocation, endLocation, req.params.id]
+            );
+            res.sendStatus(200);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
+    })
+    .delete(requireAdmin, async (req, res) => {
+        try {
+            await pool.query('DELETE FROM routes WHERE RouteID = ?', [req.params.id]);
+            res.sendStatus(200);
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Ошибка сервера');
+        }
+    });
 
 
-
-app.get('/main', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/'); // Перенаправление на страницу входа, если нет сессии
-    }
-
-    // Используем Promise.all для параллельного выполнения запросов
-    Promise.all([getTrucksFromDB(), getRoutesFromDB(), getHistoryFromDB()])
-        .then(([trucks, routes, history]) => {
-            const user = req.session.user; // Получаем информацию о пользователе из сессии
-            res.render('index', { trucks, routes, history, user }); // Передаем данные пользователя в шаблон
-        })
-        .catch(err => {
-            console.error('Error fetching data from database:', err);
-            res.status(500).send('Error fetching data');
-        });
-});
+      
 
 
-app.get('/main', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/'); // Перенаправляем на страницу входа, если нет сессии
-    }
+// Вспомогательные функции для работы с БД
+async function getTrucksFromDB() {
+    const [rows] = await pool.query('SELECT * FROM trucks');
+    return rows;
+}
 
-    // Данные пользователя из сессии
-    const user = req.session.user;
+async function getRoutesFromDB() {
+    const [rows] = await pool.query('SELECT * FROM routes');
+    return rows;
+}
 
-    // Параллельно загружаем данные
-    Promise.all([getTrucksFromDB(), getRoutesFromDB(), getHistoryFromDB()])
-        .then(([trucks, routes, history]) => {
-            res.render('index', { trucks, routes, history, user }); // Передаем данные пользователя в шаблон
-        })
-        .catch(err => {
-            console.error('Error fetching data from database:', err);
-            res.status(500).send('Error fetching data');
-        });
-});
+async function getHistoryFromDB() {
+    const [rows] = await pool.query('SELECT * FROM history');
+    return rows;
+}
 
+async function getUsersFromDB() {
+    const [rows] = await pool.query('SELECT * FROM users');
+    return rows;
+}
 
-
+// Запуск сервера
 const PORT = 3000;
 const HOST = 'localhost';
 
 app.listen(PORT, () => {
-    console.log(`Server started:\nhttp://${HOST}:${PORT}`)
-})
-
-function getTrucksFromDB() {
-    const query = 'SELECT * FROM trucks';
-    return new Promise((resolve, reject) => {
-        pool.query(query, (err, results) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(results);
-        });
-    });
-}
-
-function getRoutesFromDB() {
-    const query = 'SELECT * FROM routes';
-    return new Promise((resolve, reject) => {
-        pool.query(query, (err, results) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(results);
-        });
-    });
-}
-
-function getHistoryFromDB() {
-    const query = 'SELECT * FROM history';
-    return new Promise((resolve, reject) => {
-        pool.query(query, (err, results) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(results);
-        });
-    });
-}
-
-function getUsersFromDB()
-{
-    const query = 'SELECT * FROM users';
-    return new Promise((resolve, reject) => {
-        pool.query(query, (err, results) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve(results);
-        });
-    });
-}
-
-app.post('/delete-route', (req, res) => {
-    const { StartLocation, EndLocation } = req.body;
-    if (!StartLocation || !EndLocation) {
-        return res.status(400).send('Loading and unloading points are required');
-    }
-
-    deleteRouteFromDB(StartLocation, EndLocation)
-        .then(() => res.sendStatus(200))
-        .catch(err => {
-            console.error('Error deleting route:', err);
-            res.status(500).send('Error deleting route');
-        });
+    console.log(`Сервер запущен: http://${HOST}:${PORT}`);
 });
-
-function deleteRouteFromDB(StartLocation, EndLocation) {
-    const query = 'DELETE FROM routes WHERE StartLocation = ? AND EndLocation = ?';
-    return new Promise((resolve, reject) => {
-        pool.query(query, [StartLocation, EndLocation], (err) => {
-            if (err) {
-                return reject(err);
-            }
-            resolve();
-        });
-    });
-}
