@@ -37,6 +37,13 @@ roll nvarchar(255),
 password nvarchar(255)
 );
 
+create table IntermediatePoints(
+ID int PRIMARY KEY AUTO_INCREMENT,
+routeID int,
+indexNum int,
+pointName nvarchar(255)
+);
+
 FLUSH PRIVILEGES;
 
 ALTER USER 'root'@'localhost' IDENTIFIED BY '09122005ABc';

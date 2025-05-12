@@ -182,6 +182,22 @@ app.get('/main', requireAuth, async (req, res) => {
     }
 });
 
+app.get('/construct', requireAuth, async (req, res) => {
+    try {
+        const [routes] = await Promise.all([
+            getRoutesFromDB()
+        ]);
+        
+        res.render('routeConstructor', {
+            routes,
+            user: req.session.user 
+        });
+    } catch (err) {
+        console.error('Ошибка загрузки главной страницы:', err);
+        res.status(500).send('Ошибка загрузки данных');
+    }
+});
+
 // API для работы с пользователями
 app.route('/admin/users/:id?')
     .post(requireAdmin, async (req, res) => {

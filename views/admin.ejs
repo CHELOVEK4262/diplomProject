@@ -5,7 +5,9 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        tr:hover { background-color: rgb(241, 241, 241); }
+        tbody tr:hover {
+    background-color: rgb(241, 241, 241);
+}
         td, th { padding: 10px; text-align: left; }
         .action-btns { display: flex; gap: 5px; }
         .modal { display: none; position: fixed; z-index: 2; left: -351px; top: 10px; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
@@ -300,7 +302,7 @@ async function deleteRoute(routeId) {
                                 <td><%= route.RouteID %></td>
                                 <td><%= route.StartLocation %></td>
                                 <td><%= route.EndLocation %></td>
-                                <td class="action-btns">
+                                <td class="action-btns" style="height: 40px;">
                                     <button onclick="editRoute(<%= route.RouteID %>, '<%= route.StartLocation %>', '<%= route.EndLocation %>')">
                                         <i class="fas fa-edit"></i>
                                     </button>

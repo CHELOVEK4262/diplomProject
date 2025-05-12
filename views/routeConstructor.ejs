@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>Маршруты</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        table {
+            width: 550px;
+        }
+        tbody tr:hover {
+    background-color: rgb(241, 241, 241);
+}
+        td, th { padding: 10px; text-align: left; }
+        .action-btns { display: flex; gap: 5px; }
+        .modal { display: none; position: fixed; z-index: 2; left: -351px; top: 10px; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <table class="routesTable" cellspacing="0">
+        <thead><tr>
+            <th>Пункт загрузки</th>
+            <th>Пункт выгрузки</th>
+        </tr></thead>
+        <tbody>
+            <% routes.forEach(route => { %>
+                <tr>
+                    <td><%= route.StartLocation %></td>
+                    <td><%= route.EndLocation %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+</body>
+</html>

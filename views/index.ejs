@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="icon" href="img/logo.svg" type="image/x-icon"/>
-
-    <script src="Db.js"></script>
 </head>
 <body>
 
@@ -262,7 +260,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="/public/fonts/PTSans-normal.js"></script>
 
     <script>
         function exportDoc()
@@ -427,7 +424,7 @@ async function exportToPDF(content) {
                 }
 
                 // Расчет стоимости топлива
-                const fuelExpenses = fuelCost;
+                const fuelExpenses = fuelCost * distance;
 
                 // Общая стоимость рейса
                 const totalCost = fuelExpenses + tollCost + parkingCost + driverFood;
