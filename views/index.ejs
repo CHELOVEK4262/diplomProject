@@ -9,12 +9,16 @@
     <link rel="icon" href="img/logo.svg" type="image/x-icon"/>
 </head>
 <body>
-
     <div>
         <% if (user) { %>
             <div class="user-info">
                 <span id="current-user">Привет, <span id="username"> <%= user.login %></span>!</span> <!-- Используем login -->
-            </div>
+                <form action="/logout" method="POST">
+        <button type="submit" style="padding: 6px 12px; background-color: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Выйти
+        </button>
+    </form>
+            </div> 
         <% } else { %>
             <p>Пожалуйста, войдите в систему.</p>
         <% } %>        
@@ -213,7 +217,7 @@
                 <input class="options-input" type="number" id="driver-food" value="0.00" step="0.01">
             </div>
         </div>
-            <!-- <div class="history-table">
+            <div class="history-table">
                 <table cellspacing=0>
                     <thead><tr>
                         <th>Дата</th>
@@ -241,7 +245,7 @@
                             </tr>
                         <% }) %>
                     </tbody>
-                </table> -->
+                </table>
             </div>
     </div>
 

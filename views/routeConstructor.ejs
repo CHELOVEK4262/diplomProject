@@ -1,36 +1,385 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <title>Маршруты</title>
-    <link rel="stylesheet" href="/css/main.css">
-    <style>
-        table {
-            width: 550px;
-        }
-        tbody tr:hover {
-    background-color: rgb(241, 241, 241);
-}
-        td, th { padding: 10px; text-align: left; }
-        .action-btns { display: flex; gap: 5px; }
-        .modal { display: none; position: fixed; z-index: 2; left: -351px; top: 10px; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Маршруты с маршрутизацией</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      height: 100vh;
+      display: flex;
+      position: relative;
+      flex-direction: row;
+    }
+
+    .left-panel {
+      padding: 20px;
+      width: 550px;
+      transition: width 0.3s ease, padding 0.3s ease;
+      overflow: hidden;
+      background-color: #f9f9f9;
+    }
+
+    .left-panel.collapsed {
+      width: 0;
+      padding: 0;
+    }
+
+    .toggle-btn {
+      position: absolute;
+      top: 10px;
+      left: 550px;
+      background-color: #ddd;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      z-index: 10;
+      transition: left 0.3s ease;
+    }
+
+    .left-panel.collapsed + .toggle-btn {
+      left: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    tbody tr:hover {
+      background-color: rgb(241, 241, 241);
+      cursor: pointer;
+    }
+
+    td, th {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .map-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    #map {
+      height: 65vh;
+      width: 95%;
+      margin-bottom: 10px;
+    }
+
+    .route-editor {
+      width: 95%;
+      height: 29vh;
+      background: #f0f0f0;
+      padding: 10px 15px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .route-editor label {
+      font-weight: 600;
+      min-width: 120px;
+    }
+
+    .route-editor input[type="text"] {
+      flex: 1 1 200px;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      height: 36px;
+      box-sizing: border-box;
+    }
+
+    .route-editor button {
+      padding: 7px 15px;
+      font-size: 14px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      flex: 0 0 auto;
+      height: 36px;
+      align-self: flex-end;
+    }
+
+    .route-editor button:hover {
+      background-color: #0056b3;
+    }
+
+    #viaPointsContainer {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 8px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      min-height: 38px;
+      flex: 1 1 300px;
+      background: white;
+      white-space: nowrap;
+    }
+
+    .via-point-tag {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      background: white;
+      border: 1px solid #007bff;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 14px;
+      white-space: nowrap;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .via-point-tag .remove-btn {
+      margin-left: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #007bff;
+      user-select: none;
+    }
+
+    .via-arrow {
+      font-weight: bold;
+      font-size: 16px;
+      color: #555;
+      user-select: none;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .route-editor > * {
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
 </head>
 <body>
+  <div class="left-panel" id="leftPanel">
     <table class="routesTable" cellspacing="0">
-        <thead><tr>
-            <th>Пункт загрузки</th>
-            <th>Пункт выгрузки</th>
-        </tr></thead>
-        <tbody>
-            <% routes.forEach(route => { %>
-                <tr>
-                    <td><%= route.StartLocation %></td>
-                    <td><%= route.EndLocation %></td>
-                </tr>
-            <% }) %>
-        </tbody>
+      <thead>
+        <tr>
+          <th>Пункт загрузки</th>
+          <th>Пункт выгрузки</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% routes.forEach(route => { %>
+          <tr data-start="<%= route.StartLocation %>" data-end="<%= route.EndLocation %>">
+            <td><%= route.StartLocation %></td>
+            <td><%= route.EndLocation %></td>
+          </tr>
+        <% }) %>
+      </tbody>
     </table>
+  </div>
+
+  <button class="toggle-btn" id="toggleBtn" title="Свернуть">⮜</button>
+
+  <div class="map-container">
+    <div id="map"></div>
+
+    <div class="route-editor">
+      <label for="startInput">Пункт загрузки:</label>
+      <input type="text" id="startInput" placeholder="Введите пункт загрузки" />
+
+      <label>Промежуточные точки:</label>
+      <div id="viaPointsContainer" title="Промежуточные точки"></div>
+      <input type="text" id="viaInputNew" placeholder="Добавить промежуточную точку" />
+      <button id="addViaBtn">Добавить</button>
+
+      <label for="endInput">Пункт выгрузки:</label>
+      <input type="text" id="endInput" placeholder="Введите пункт выгрузки" />
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+  <script>
+    const map = L.map("map").setView([55.751244, 37.618423], 5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
+
+    const leftPanel = document.getElementById("leftPanel");
+    const toggleBtn = document.getElementById("toggleBtn");
+    let routingControl = null;
+
+    toggleBtn.addEventListener("click", () => {
+      leftPanel.classList.toggle("collapsed");
+      toggleBtn.textContent = leftPanel.classList.contains("collapsed") ? "⮞" : "⮜";
+      toggleBtn.title = leftPanel.classList.contains("collapsed") ? "Развернуть" : "Свернуть";
+      toggleBtn.style.left = leftPanel.classList.contains("collapsed") ? "0" : "550px";
+      setTimeout(() => map.invalidateSize(), 310);
+    });
+
+    async function geocode(location) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      } else {
+        alert(`Не удалось найти координаты для: ${location}`);
+        return null;
+      }
+    }
+
+    async function geocodeMultiple(locations) {
+      const results = [];
+      for (const loc of locations) {
+        const coords = await geocode(loc);
+        if (!coords) return null;
+        results.push(coords);
+      }
+      return results;
+    }
+
+    async function showRoute(startName, viaNames, endName) {
+      const startCoords = await geocode(startName);
+      const endCoords = await geocode(endName);
+      if (!startCoords || !endCoords) return;
+
+      let viaCoords = [];
+      if (viaNames.length > 0) {
+        viaCoords = await geocodeMultiple(viaNames);
+        if (!viaCoords) return;
+      }
+
+      if (routingControl) {
+        map.removeControl(routingControl);
+      }
+
+      const waypoints = [
+        L.latLng(startCoords),
+        ...viaCoords.map(c => L.latLng(c)),
+        L.latLng(endCoords)
+      ];
+
+      routingControl = L.Routing.control({
+        waypoints: waypoints,
+        routeWhileDragging: false,
+        draggableWaypoints: false,
+        addWaypoints: false,
+        showAlternatives: false,
+        lineOptions: {
+          styles: [{ color: "blue", opacity: 0.7, weight: 5 }],
+        },
+        createMarker: function(i, wp) {
+          if (i === 0) {
+            return L.marker(wp.latLng).bindPopup("Пункт загрузки").openPopup();
+          } else if (i === waypoints.length - 1) {
+            return L.marker(wp.latLng).bindPopup("Пункт выгрузки").openPopup();
+          } else {
+            return L.marker(wp.latLng).bindPopup(`Промежуточная точка ${i}`).openPopup();
+          }
+        },
+        router: L.Routing.osrmv1({
+          serviceUrl: "https://router.project-osrm.org/route/v1",
+          profile: "car",
+        }),
+      }).addTo(map);
+    }
+
+    const viaPointsContainer = document.getElementById("viaPointsContainer");
+    const viaInputNew = document.getElementById("viaInputNew");
+    const addViaBtn = document.getElementById("addViaBtn");
+
+    let viaPoints = [];
+
+    function renderViaPoints() {
+      viaPointsContainer.innerHTML = "";
+
+      viaPoints.forEach((point, idx) => {
+        const tag = document.createElement("div");
+        tag.className = "via-point-tag";
+        tag.textContent = point;
+
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "remove-btn";
+        removeBtn.textContent = "×";
+        removeBtn.title = "Удалить точку";
+        removeBtn.onclick = () => {
+          viaPoints.splice(idx, 1);
+          renderViaPoints();
+          triggerAutoRouteUpdate();
+        };
+
+        tag.appendChild(removeBtn);
+        viaPointsContainer.appendChild(tag);
+
+        if (idx < viaPoints.length - 1) {
+          const arrow = document.createElement("span");
+          arrow.className = "via-arrow";
+          arrow.textContent = "→";
+          viaPointsContainer.appendChild(arrow);
+        }
+      });
+    }
+
+    function triggerAutoRouteUpdate() {
+      const start = document.getElementById("startInput").value.trim();
+      const end = document.getElementById("endInput").value.trim();
+      if (start && end) {
+        showRoute(start, viaPoints, end);
+      }
+    }
+
+    addViaBtn.addEventListener("click", () => {
+      const newPoint = viaInputNew.value.trim();
+      if (newPoint && !viaPoints.includes(newPoint)) {
+        viaPoints.push(newPoint);
+        renderViaPoints();
+        viaInputNew.value = "";
+        triggerAutoRouteUpdate();
+      }
+    });
+
+    document.getElementById("startInput").addEventListener("input", triggerAutoRouteUpdate);
+    document.getElementById("endInput").addEventListener("input", triggerAutoRouteUpdate);
+
+    document.querySelectorAll(".routesTable tbody tr").forEach((row) => {
+      row.addEventListener("click", () => {
+        const start = row.dataset.start;
+        const end = row.dataset.end;
+
+        document.getElementById("startInput").value = start;
+        document.getElementById("endInput").value = end;
+
+        viaPoints = [];
+        renderViaPoints();
+        showRoute(start, viaPoints, end);
+
+        leftPanel.classList.add("collapsed");
+        toggleBtn.textContent = "⮞";
+        toggleBtn.title = "Развернуть";
+        toggleBtn.style.left = "0";
+        setTimeout(() => map.invalidateSize(), 310);
+      });
+    });
+  </script>
 </body>
 </html>

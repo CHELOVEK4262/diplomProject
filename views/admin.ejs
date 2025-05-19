@@ -16,6 +16,13 @@
     </style>
 </head>
 <body>
+    <div style="text-align: right; margin-bottom: 10px; position: fixed; width: 98vw;">
+    <form action="/logout" method="POST">
+        <button type="submit" style="padding: 6px 12px; background-color: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Выйти
+        </button>
+    </form>
+</div>
     <script>
         function openModal(type) {
         const modal = document.getElementById(`${type}Modal`);
@@ -44,7 +51,7 @@
             <ul style="list-style: none; padding: 0;">
                 <li><button onclick="showTab('usersTab', this)" class="tab-btn">Пользователи</button></li>
                 <li><button onclick="showTab('trucksTab', this)" class="tab-btn">Автомобили</button></li>
-                <li><button onclick="showTab('routesTab', this)" class="tab-btn">Маршруты</button></li>
+                <li><button onclick="window.location.replace('/construct')" class="tab-btn">Маршруты</button></li>
             </ul>
         </nav>
 

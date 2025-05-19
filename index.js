@@ -198,6 +198,16 @@ app.get('/construct', requireAuth, async (req, res) => {
     }
 });
 
+app.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.redirect('/');
+        }
+        res.clearCookie('connect.sid');
+        res.redirect('/');
+    });
+});
+
 // API для работы с пользователями
 app.route('/admin/users/:id?')
     .post(requireAdmin, async (req, res) => {
