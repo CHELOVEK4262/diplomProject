@@ -14,6 +14,48 @@
         .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%; }
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     </style>
+    <script>
+function filterTable(inputId, tableId) {
+    const input = document.getElementById(inputId);
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById(tableId);
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) { // пропустить заголовок
+        const cells = rows[i].getElementsByTagName('td');
+        let match = false;
+        for (let j = 0; j < cells.length; j++) {
+            const cellText = cells[j].textContent.toLowerCase();
+            if (cellText.includes(filter)) {
+                match = true;
+                break;
+            }
+        }
+        rows[i].style.display = match ? '' : 'none';
+    }
+}
+</script>
+<script>
+function filterTable(inputId, tableId) {
+    const input = document.getElementById(inputId);
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById(tableId);
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) { // пропустить заголовок
+        const cells = rows[i].getElementsByTagName('td');
+        let match = false;
+        for (let j = 0; j < cells.length; j++) {
+            const cellText = cells[j].textContent.toLowerCase();
+            if (cellText.includes(filter)) {
+                match = true;
+                break;
+            }
+        }
+        rows[i].style.display = match ? '' : 'none';
+    }
+}
+</script>
 </head>
 <body>
     <div style="text-align: right; margin-bottom: 10px; position: fixed; width: 98vw;">
@@ -60,8 +102,9 @@
             <!-- Users Tab -->
             <section id="usersTab" class="tab-content">
                 <!-- ... таблица пользователей ... -->
-                <h2>Пользователи <button onclick="openModal('user')"><i class="fas fa-plus"></i> Добавить</button></h2>
-                <table class="routesTable" cellspacing="0">
+                <h2>Пользователи</h2>
+                <input type="text" id="userSearch" onkeyup="filterTable('userSearch', 'userTable')" placeholder="Поиск по пользователям..." style="margin-bottom: 10px; padding: 5px; width: 20%;">
+                <table id="userTable" class="routesTable" cellspacing="0">
                     <thead><tr>
                         <th>ID</th>
                         <th>E-mail</th>
@@ -265,7 +308,8 @@ async function deleteRoute(routeId) {
             <section id="trucksTab" class="tab-content" style="display: none;">
                 <!-- ... таблица автомобилей ... -->
                 <h2>Автомобили <button onclick="openModal('truck')"><i class="fas fa-plus"></i> Добавить</button></h2>
-                <table class="routesTable" cellspacing="0">
+                <input type="text" id="truckSearch" onkeyup="filterTable('truckSearch', 'truckTable')" placeholder="Поиск по автомобилям..." style="margin-bottom: 10px; padding: 5px; width: 20%;">
+                <table id="truckTable" class="routesTable" cellspacing="0">
                     <thead><tr>
                         <th>ID</th>
                         <th>Название</th>
@@ -295,8 +339,8 @@ async function deleteRoute(routeId) {
             <!-- Routes Tab -->
             <section id="routesTab" class="tab-content" style="display: none;">
                 <!-- ... таблица маршрутов ... -->
-                <h2>Маршруты <button onclick="openModal('route')"><i class="fas fa-plus"></i> Добавить</button></h2>
-                <table class="routesTable" cellspacing="0">
+                <!-- <h2>Маршруты <button onclick="openModal('route')"><i class="fas fa-plus"></i> Добавить</button></h2> -->
+                <!-- <table class="routesTable" cellspacing="0">
                     <thead><tr>
                         <th>ID</th>
                         <th>Пункт загрузки</th>
@@ -318,7 +362,7 @@ async function deleteRoute(routeId) {
                             </tr>
                         <% }) %>
                     </tbody>
-                </table>
+                </table> -->
             </section>
             
             <script>
