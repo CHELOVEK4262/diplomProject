@@ -10,32 +10,11 @@
 }
         td, th { padding: 10px; text-align: left; }
         .action-btns { display: flex; gap: 5px; }
-        .modal { display: none; position: fixed; z-index: 2; left: -351px; top: 10px; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+        .modal { display: none; position: fixed; z-index: 2; border-radius: 0px; left: -351px; top: 10px; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
         .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%; }
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     </style>
     <script>
-function filterTable(inputId, tableId) {
-    const input = document.getElementById(inputId);
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById(tableId);
-    const rows = table.getElementsByTagName('tr');
-
-    for (let i = 1; i < rows.length; i++) { // пропустить заголовок
-        const cells = rows[i].getElementsByTagName('td');
-        let match = false;
-        for (let j = 0; j < cells.length; j++) {
-            const cellText = cells[j].textContent.toLowerCase();
-            if (cellText.includes(filter)) {
-                match = true;
-                break;
-            }
-        }
-        rows[i].style.display = match ? '' : 'none';
-    }
-}
-</script>
-<script>
 function filterTable(inputId, tableId) {
     const input = document.getElementById(inputId);
     const filter = input.value.toLowerCase();
@@ -85,6 +64,15 @@ function filterTable(inputId, tableId) {
         }
     }
 }
+window.onclick = function(event) {
+    const modals = ['userModal', 'truckModal', 'routeModal'];
+    modals.forEach(id => {
+        const modal = document.getElementById(id);
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+};
     </script>
 
     <div style="display: flex; height: 90vh;">
@@ -113,22 +101,26 @@ function filterTable(inputId, tableId) {
                         <th>Действия</th>
                     </tr></thead>
                     <tbody>
-                        <% users.forEach(user => { %>
-                            <tr>
-                                <td><%= user.ID %></td>
-                                <td><%= user.email %></td>
-                                <td><%= user.login %></td>
-                                <td>
-                                    <%= user.roll %>
-                                </td>
-                                <td class="action-btns">
-                                    <button onclick="editUser(<%= user.ID %>, '<%= user.email %>', '<%= user.login %>', '<%= user.roll %>')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>                            
-                                </td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
+    <% users.forEach(user => { %>
+        <tr style="<%= user.ID === currentUserId ? 'background-color: #eee; color: #999;' : '' %>">
+            <td><%= user.ID %></td>
+            <td><%= user.email %></td>
+            <td><%= user.login %></td>
+            <td><%= user.roll %></td>
+            <td class="action-btns">
+                <% if (user.ID !== currentUserId) { %>
+                    <button onclick="editUser(<%= user.ID %>, '<%= user.email %>', '<%= user.login %>', '<%= user.roll %>')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                <% } else { %>
+                    <button disabled title="Нельзя редактировать самого себя" style="opacity: 0.4; cursor: not-allowed;">
+                        <i class="fas fa-user-lock"></i>
+                    </button>
+                <% } %>
+            </td>
+        </tr>
+    <% }) %>
+</tbody>
                 </table>
                 <script>
                     function editUser(id, email, login, role) {

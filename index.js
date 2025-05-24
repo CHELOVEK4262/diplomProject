@@ -114,7 +114,7 @@ app.post('/login', async (req, res) => {
         }
 
         req.session.user = { 
-            id: user.id, 
+            id: user.ID, 
             login: user.login, 
             role: user.roll || 'user' 
         };
@@ -153,7 +153,8 @@ app.get('/admin', requireAuth, requireAdmin, async (req, res) => {
             users, 
             trucks, 
             routes, 
-            user: req.session.user 
+            user: req.session.user,
+            currentUserId: req.session.user.id
         });
     } catch (err) {
         console.error('Ошибка загрузки админ-панели:', err);
