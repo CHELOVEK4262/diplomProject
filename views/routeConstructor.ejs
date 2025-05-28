@@ -5,6 +5,9 @@
   <title>Маршруты с маршрутизацией</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script>
+    let editingRouteId = null;
+  </script>
   <style>
     body {
       margin: 0;
@@ -85,6 +88,7 @@
       border-radius: 6px;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
       display: flex;
+      flex-direction: column;
       flex-wrap: wrap;
       gap: 10px;
       align-items: center;
@@ -96,7 +100,7 @@
     }
 
     .route-editor input[type="text"] {
-      flex: 1 1 200px;
+      width: 300px;
       padding: 6px 8px;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -134,9 +138,10 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       min-height: 38px;
-      flex: 1 1 300px;
+      /* flex: 1 1 300px; */
       background: white;
       white-space: nowrap;
+      margin-bottom: 5px;
     }
 
     .via-point-tag {
@@ -178,20 +183,37 @@
   </style>
 </head>
 <body>
-  <div class="left-panel" id="leftPanel">
+  <div class="left-panel" id="leftPanel" style="z-index: 2000;">
+    <button id="addRouteBtn" style="
+    margin-bottom: 10px;
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  ">Добавить маршрут</button>
     <table class="routesTable" cellspacing="0">
       <thead>
         <tr>
           <th>Пункт загрузки</th>
           <th>Пункт выгрузки</th>
+          <th>Промежуточные точки</th>
         </tr>
       </thead>
       <tbody>
         <% routes.forEach(route => { %>
-          <tr data-start="<%= route.StartLocation %>" data-end="<%= route.EndLocation %>">
-            <td><%= route.StartLocation %></td>
-            <td><%= route.EndLocation %></td>
-          </tr>
+<tr
+  data-id="<%= route.RouteID %>"
+  data-start="<%= route.StartLocation %>"
+  data-end="<%= route.EndLocation %>"
+  data-via='<%= JSON.stringify(route.IntermediatePoints || []) %>'
+>
+  <td><%= route.StartLocation %></td>
+  <td><%= route.EndLocation %></td>
+  <td><%= (route.IntermediatePoints || []).join(" → ") %></td>
+</tr>
         <% }) %>
       </tbody>
     </table>
@@ -206,14 +228,31 @@
       <label for="startInput">Пункт загрузки:</label>
       <input type="text" id="startInput" placeholder="Введите пункт загрузки" />
 
-      <label>Промежуточные точки:</label>
+      <div style="display: flex; height: 300px;">
+        <label>Промежуточные точки:</label>
       <div id="viaPointsContainer" title="Промежуточные точки"></div>
       <input type="text" id="viaInputNew" placeholder="Добавить промежуточную точку" />
       <button id="addViaBtn">Добавить</button>
+      </div>
 
       <label for="endInput">Пункт выгрузки:</label>
       <input type="text" id="endInput" placeholder="Введите пункт выгрузки" />
+      <button onclick="saveRoute()">Сохранить маршрут</button>
+      <div id="overlayBlocker" style="
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: #333;
+    user-select: none;
+  ">
+  </div>
     </div>
+    
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -311,38 +350,41 @@
     let viaPoints = [];
 
     function renderViaPoints() {
-      viaPointsContainer.innerHTML = "";
+  const container = document.getElementById('viaPointsContainer');
+  container.innerHTML = ''; // очистить старое содержимое
 
-      viaPoints.forEach((point, idx) => {
-        const tag = document.createElement("div");
-        tag.className = "via-point-tag";
-        tag.textContent = point;
+  viaPoints.forEach((point, idx) => {
+    const tag = document.createElement('div');
+    tag.className = 'via-point-tag';
+    tag.textContent = point;
 
-        const removeBtn = document.createElement("span");
-        removeBtn.className = "remove-btn";
-        removeBtn.textContent = "×";
-        removeBtn.title = "Удалить точку";
-        removeBtn.onclick = () => {
-          viaPoints.splice(idx, 1);
-          renderViaPoints();
-          triggerAutoRouteUpdate();
-        };
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Удалить точку';
+    removeBtn.onclick = () => {
+      viaPoints.splice(idx, 1);
+      renderViaPoints();
+      triggerAutoRouteUpdate();
+    };
 
-        tag.appendChild(removeBtn);
-        viaPointsContainer.appendChild(tag);
+    tag.appendChild(removeBtn);
+    container.appendChild(tag);
 
-        if (idx < viaPoints.length - 1) {
-          const arrow = document.createElement("span");
-          arrow.className = "via-arrow";
-          arrow.textContent = "→";
-          viaPointsContainer.appendChild(arrow);
-        }
-      });
+    // Добавляем стрелку между тегами, кроме последнего
+    if (idx < viaPoints.length - 1) {
+      const arrow = document.createElement('span');
+      arrow.className = 'via-arrow';
+      arrow.textContent = '→';
+      container.appendChild(arrow);
     }
+  });
+}
 
     function triggerAutoRouteUpdate() {
       const start = document.getElementById("startInput").value.trim();
       const end = document.getElementById("endInput").value.trim();
+      renderViaPoints();
       if (start && end) {
         showRoute(start, viaPoints, end);
       }
@@ -360,26 +402,135 @@
 
     document.getElementById("startInput").addEventListener("input", triggerAutoRouteUpdate);
     document.getElementById("endInput").addEventListener("input", triggerAutoRouteUpdate);
-
-    document.querySelectorAll(".routesTable tbody tr").forEach((row) => {
-      row.addEventListener("click", () => {
-        const start = row.dataset.start;
-        const end = row.dataset.end;
-
-        document.getElementById("startInput").value = start;
-        document.getElementById("endInput").value = end;
-
-        viaPoints = [];
-        renderViaPoints();
-        showRoute(start, viaPoints, end);
-
-        leftPanel.classList.add("collapsed");
-        toggleBtn.textContent = "⮞";
-        toggleBtn.title = "Развернуть";
-        toggleBtn.style.left = "0";
-        setTimeout(() => map.invalidateSize(), 310);
-      });
-    });
   </script>
+  <script>
+  function saveRoute() {
+  const startLocation = document.getElementById("startInput").value.trim();
+  const endLocation = document.getElementById("endInput").value.trim();
+
+  if (!startLocation || !endLocation) {
+    alert("Пожалуйста, укажите и пункт загрузки, и пункт выгрузки.");
+    return;
+  }
+
+  const payload = {
+    startLocation,
+    endLocation,
+    intermediatePoints: viaPoints
+  };
+
+  if (editingRouteId) {
+    // обновление маршрута
+    fetch(`/routes/update/${editingRouteId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        alert("Маршрут обновлён");
+        location.reload();
+      })
+      .catch(err => console.error("Ошибка обновления:", err));
+  } else {
+    // добавление нового маршрута
+    fetch('/routes/saveFull', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        alert("Маршрут добавлен");
+        location.reload();
+      })
+      .catch(err => console.error("Ошибка сохранения:", err));
+  }
+  console.log("editingRouteId =", editingRouteId);
+console.log("Payload to send:", payload);
+}
+</script>
+<script>
+  async function loadRouteFromDB(RouteID) {
+    try {
+      const res = await fetch(`/routes/${RouteID}`);
+      if (!res.ok) throw new Error(`Ошибка загрузки маршрута: ${res.status}`);
+      const data = await res.json();
+
+      const { startLocation, endLocation, intermediatePoints } = data;
+
+      document.getElementById("startInput").value = startLocation;
+      document.getElementById("endInput").value = endLocation;
+
+      viaPoints = intermediatePoints || [];
+      renderViaPoints();
+
+      showRoute(startLocation, viaPoints, endLocation);
+
+      // свернуть панель (опционально)
+      leftPanel.classList.add("collapsed");
+      toggleBtn.textContent = "⮞";
+      toggleBtn.title = "Развернуть";
+      toggleBtn.style.left = "0";
+      setTimeout(() => map.invalidateSize(), 310);
+    } catch (error) {
+      console.error("Ошибка загрузки маршрута:", error);
+      alert("Не удалось загрузить маршрут.");
+    }
+  }
+</script>
+<script>
+  document.querySelectorAll(".routesTable tbody tr").forEach((row) => {
+  row.addEventListener("click", () => {
+    const routeId = row.getAttribute("data-id"); // <-- Предполагается, что у каждой строки есть data-id
+    const start = row.dataset.start;
+    const end = row.dataset.end;
+    let via = [];
+
+    try {
+      via = JSON.parse(row.dataset.via || "[]");
+    } catch (err) {
+      console.warn("Ошибка парсинга via:", err);
+    }
+
+    editingRouteId = routeId; // <-- устанавливаем ID редактируемого маршрута
+    document.getElementById("startInput").value = start;
+    document.getElementById("endInput").value = end;
+    viaPoints = via;
+    renderViaPoints();
+    showRoute(start, viaPoints, end);
+
+    leftPanel.classList.add("collapsed");
+    toggleBtn.textContent = "⮞";
+    toggleBtn.title = "Развернуть";
+    toggleBtn.style.left = "0";
+
+    document.getElementById("overlayBlocker").style.display = "none";
+    setTimeout(() => map.invalidateSize(), 310);
+  });
+});
+</script>
+<script>
+  document.getElementById("addRouteBtn").addEventListener("click", () => {
+  editingRouteId = null; // <== сброс редактируемого маршрута
+  document.getElementById("startInput").value = "";
+  document.getElementById("endInput").value = "";
+  viaPoints = [];
+  renderViaPoints();
+
+  if (routingControl) {
+    map.removeControl(routingControl);
+    routingControl = null;
+  }
+
+  document.getElementById("overlayBlocker").style.display = "none";
+  leftPanel.classList.add("collapsed");
+  toggleBtn.textContent = "⮞";
+  toggleBtn.title = "Развернуть";
+  toggleBtn.style.left = "0";
+  setTimeout(() => map.invalidateSize(), 310);
+});
+</script>
+
 </body>
 </html>

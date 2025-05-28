@@ -82,6 +82,7 @@ window.onclick = function(event) {
                 <li><button onclick="showTab('usersTab', this)" class="tab-btn">Пользователи</button></li>
                 <li><button onclick="showTab('trucksTab', this)" class="tab-btn">Автомобили</button></li>
                 <li><button onclick="window.location.replace('/construct')" class="tab-btn">Маршруты</button></li>
+                <li><button onclick="window.location.replace('/statistic')" class="tab-btn">Статистика</button></li>
             </ul>
         </nav>
 
@@ -109,7 +110,7 @@ window.onclick = function(event) {
             <td><%= user.roll %></td>
             <td class="action-btns">
                 <% if (user.ID !== currentUserId) { %>
-                    <button onclick="editUser(<%= user.ID %>, '<%= user.email %>', '<%= user.login %>', '<%= user.roll %>')">
+                    <button onclick="editUser('<%= user.ID %>', '<%= user.email %>', '<%= user.login %>', '<%= user.roll %>')">
                         <i class="fas fa-edit"></i>
                     </button>
                 <% } else { %>
@@ -330,31 +331,12 @@ async function deleteRoute(routeId) {
 
             <!-- Routes Tab -->
             <section id="routesTab" class="tab-content" style="display: none;">
-                <!-- ... таблица маршрутов ... -->
-                <!-- <h2>Маршруты <button onclick="openModal('route')"><i class="fas fa-plus"></i> Добавить</button></h2> -->
-                <!-- <table class="routesTable" cellspacing="0">
-                    <thead><tr>
-                        <th>ID</th>
-                        <th>Пункт загрузки</th>
-                        <th>Пункт выгрузки</th>
-                        <th>Действия</th>
-                    </tr></thead>
-                    <tbody>
-                        <% routes.forEach(route => { %>
-                            <tr>
-                                <td><%= route.RouteID %></td>
-                                <td><%= route.StartLocation %></td>
-                                <td><%= route.EndLocation %></td>
-                                <td class="action-btns" style="height: 40px;">
-                                    <button onclick="editRoute(<%= route.RouteID %>, '<%= route.StartLocation %>', '<%= route.EndLocation %>')">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button onclick="deleteRoute(<%= route.RouteID %>)"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table> -->
+                
+            </section>
+
+            <!-- Statistic Tab -->
+            <section id="statTab" class="tab-content" style="display: none;">
+                
             </section>
             
             <script>

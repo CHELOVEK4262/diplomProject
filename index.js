@@ -199,6 +199,34 @@ app.get('/construct', requireAuth, async (req, res) => {
     }
 });
 
+app.get('/statistic', requireAuth, async (req, res) => {
+    try {
+        const [users] = await Promise.all([
+            getUsersFromDB()
+        ]);
+        const [trucks] = await Promise.all([
+            getUsersFromDB()
+        ]);
+        const [routes] = await Promise.all([
+            getRoutesFromDB()
+        ]);
+        const [historys] = await Promise.all([
+            getHistoryFromDB()
+        ]);
+        
+        res.render('statistic', {
+            users,
+            trucks,
+            routes,
+            historys,
+            user: req.session.user 
+        });
+    } catch (err) {
+        console.error('Ошибка загрузки главной страницы:', err);
+        res.status(500).send('Ошибка загрузки данных');
+    }
+});
+
 app.post('/logout', (req, res) => {
     req.session.destroy(err => {
         if (err) {
@@ -336,8 +364,35 @@ async function getTrucksFromDB() {
 }
 
 async function getRoutesFromDB() {
-    const [rows] = await pool.query('SELECT * FROM routes');
-    return rows;
+  // Получаем маршруты с точками через LEFT JOIN
+  const [rows] = await pool.query(`
+    SELECT 
+      r.RouteID, r.StartLocation, r.EndLocation, 
+      ip.pointName, ip.indexNum
+    FROM routes r
+    LEFT JOIN IntermediatePoints ip ON r.RouteID = ip.routeID
+    ORDER BY r.RouteID, ip.indexNum
+  `);
+
+  // Группируем данные по маршрутам
+  const routesMap = new Map();
+
+  for (const row of rows) {
+    if (!routesMap.has(row.RouteID)) {
+      routesMap.set(row.RouteID, {
+        RouteID: row.RouteID,
+        StartLocation: row.StartLocation,
+        EndLocation: row.EndLocation,
+        IntermediatePoints: []
+      });
+    }
+    if (row.pointName) {
+      routesMap.get(row.RouteID).IntermediatePoints.push(row.pointName);
+    }
+  }
+
+  // Возвращаем массив объектов маршрутов, где IntermediatePoints — массив строк (названия точек)
+  return Array.from(routesMap.values());
 }
 
 async function getHistoryFromDB() {
@@ -349,6 +404,85 @@ async function getUsersFromDB() {
     const [rows] = await pool.query('SELECT * FROM users');
     return rows;
 }
+
+// Сохранение полного маршрута с промежуточными точками
+app.post('/routes/saveFull', requireAuth, async (req, res) => {
+    const { startLocation, endLocation, intermediatePoints } = req.body;
+
+    if (!startLocation || !endLocation) {
+        return res.status(400).send('Старт и финиш обязательны');
+    }
+
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        // 1. Вставляем основной маршрут
+        const [routeResult] = await conn.query(
+            'INSERT INTO routes (StartLocation, EndLocation) VALUES (?, ?)',
+            [startLocation, endLocation]
+        );
+        const routeID = routeResult.insertId;
+
+        // 2. Вставляем промежуточные точки (если есть)
+        if (intermediatePoints && intermediatePoints.length > 0) {
+            const values = intermediatePoints.map((point, index) => [routeID, index, point]);
+            await conn.query(
+                'INSERT INTO IntermediatePoints (routeID, indexNum, pointName) VALUES ?',
+                [values]
+            );
+        }
+
+        await conn.commit();
+        res.status(201).json({ message: 'Маршрут успешно сохранён', routeID });
+    } catch (err) {
+        await conn.rollback();
+        console.error('Ошибка сохранения маршрута:', err);
+        res.status(500).send('Ошибка при сохранении маршрута');
+    } finally {
+        conn.release();
+    }
+});
+
+app.put('/routes/update/:RouteID', requireAuth, async (req, res) => {
+  const routeID = req.params.RouteID;
+  const { startLocation, endLocation, intermediatePoints } = req.body;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Обновляем основные данные маршрута
+    await conn.query(
+      'UPDATE routes SET StartLocation = ?, EndLocation = ? WHERE RouteID = ?',
+      [startLocation, endLocation, routeID]
+    );
+
+    // Удаляем старые промежуточные точки для данного маршрута
+    await conn.query(
+      'DELETE FROM IntermediatePoints WHERE routeID = ?',
+      [routeID]
+    );
+
+    // Вставляем новые промежуточные точки, если они есть
+    if (intermediatePoints && intermediatePoints.length > 0) {
+      const values = intermediatePoints.map((point, index) => [routeID, index, point]);
+      await conn.query(
+        'INSERT INTO IntermediatePoints (routeID, indexNum, pointName) VALUES ?',
+        [values]
+      );
+    }
+
+    await conn.commit();
+    res.json({ message: 'Маршрут успешно обновлен' });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Ошибка обновления маршрута:', err);
+    res.status(500).json({ message: 'Ошибка при обновлении маршрута' });
+  } finally {
+    conn.release();
+  }
+});
 
 // Запуск сервера
 const PORT = 3000;
