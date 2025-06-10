@@ -1,20 +1,15 @@
 const express = require('express');
-const mysql = require('mysql2/promise'); // Используем promise-based интерфейс
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const pool = require('./config/db'); // Подключаем пул
 
-// Создаем пул соединений с БД
-const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: "09122005ABc", // В реальном приложении используйте переменные окружения
-    database: 'transpcalc',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
+const userRoutes = require('./routes/users');
+const trucksRouter = require('./routes/trucks');
 
 const app = express();
+
+app.use('/users', userRoutes);
+app.use('/trucks', trucksRouter);
 
 // Настройки приложения
 app.set('view engine', 'ejs');
@@ -42,13 +37,7 @@ const requireAuth = (req, res, next) => {
     next();
 };
 
-// Middleware для проверки прав администратора
-const requireAdmin = (req, res, next) => {
-    if (req.session.user?.role !== 'admin') {
-        return res.status(403).send('Доступ запрещен');
-    }
-    next();
-};
+
 
 // Главная страница (логин)
 app.get('/', (req, res) => {
@@ -141,7 +130,7 @@ app.get('/logout', (req, res) => {
 });
 
 // Админ-панель
-app.get('/admin', requireAuth, requireAdmin, async (req, res) => {
+app.get('/admin', requireAuth, userRoutes, async (req, res) => {
     try {
         const [users, trucks, routes] = await Promise.all([
             getUsersFromDB(),
@@ -205,7 +194,7 @@ app.get('/statistic', requireAuth, async (req, res) => {
             getUsersFromDB()
         ]);
         const [trucks] = await Promise.all([
-            getUsersFromDB()
+            getTrucksFromDB()
         ]);
         const [routes] = await Promise.all([
             getRoutesFromDB()
@@ -239,7 +228,7 @@ app.post('/logout', (req, res) => {
 
 // API для работы с пользователями
 app.route('/admin/users/:id?')
-    .post(requireAdmin, async (req, res) => {
+    .post(userRoutes, async (req, res) => {
         try {
             const { email, login, password, role } = req.body;
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -254,7 +243,7 @@ app.route('/admin/users/:id?')
             res.status(500).send('Ошибка сервера');
         }
     })
-    .put(requireAdmin, async (req, res) => {
+    .put(userRoutes, async (req, res) => {
         try {
             const { role } = req.body;
             await pool.query(
@@ -267,7 +256,7 @@ app.route('/admin/users/:id?')
             res.status(500).send('Ошибка сервера');
         }
     })
-    .delete(requireAdmin, async (req, res) => {
+    .delete(userRoutes, async (req, res) => {
         try {
             await pool.query('DELETE FROM users WHERE ID = ?', [req.params.id]);
             res.sendStatus(200);
@@ -279,7 +268,7 @@ app.route('/admin/users/:id?')
 
 // API для работы с автомобилями
 app.route('/admin/trucks/:id?')
-    .post(requireAdmin, async (req, res) => {
+    .post(userRoutes, async (req, res) => {
         try {
             const { name, regNumber, fuelUsage } = req.body;
             await pool.query(
@@ -292,7 +281,7 @@ app.route('/admin/trucks/:id?')
             res.status(500).send('Ошибка сервера');
         }
     })
-    .put(requireAdmin, async (req, res) => {
+    .put(userRoutes, async (req, res) => {
         try {
             const { name, regNumber, fuelUsage } = req.body;
             await pool.query(
@@ -305,7 +294,7 @@ app.route('/admin/trucks/:id?')
             res.status(500).send('Ошибка сервера');
         }
     })
-    .delete(requireAdmin, async (req, res) => {
+    .delete(userRoutes, async (req, res) => {
         try {
             await pool.query('DELETE FROM trucks WHERE TruckID = ?', [req.params.id]);
             res.sendStatus(200);
@@ -317,7 +306,7 @@ app.route('/admin/trucks/:id?')
 
 // API для работы с маршрутами
 app.route('/admin/routes/:id?')
-    .post(requireAdmin, async (req, res) => {
+    .post(userRoutes, async (req, res) => {
         try {
             const { startLocation, endLocation } = req.body;
             await pool.query(
@@ -330,7 +319,7 @@ app.route('/admin/routes/:id?')
             res.status(500).send('Ошибка сервера');
         }
     })
-    .put(requireAdmin, async (req, res) => {
+    .put(userRoutes, async (req, res) => {
         try {
             const { startLocation, endLocation } = req.body;
             await pool.query(
@@ -343,7 +332,7 @@ app.route('/admin/routes/:id?')
             res.status(500).send('Ошибка сервера');
         }
     })
-    .delete(requireAdmin, async (req, res) => {
+    .delete(userRoutes, async (req, res) => {
         try {
             await pool.query('DELETE FROM routes WHERE RouteID = ?', [req.params.id]);
             res.sendStatus(200);
@@ -352,9 +341,6 @@ app.route('/admin/routes/:id?')
             res.status(500).send('Ошибка сервера');
         }
     });
-
-
-      
 
 
 // Вспомогательные функции для работы с БД

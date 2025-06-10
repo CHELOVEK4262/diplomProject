@@ -1,6 +1,7 @@
-document.addEventListener('DOMContentLoaded', function () {
-    // Инициализация карты с помощью Leaflet
-    var map = L.map('map').setView([53.9006, 27.5590], 7); // Минск
+// Инициализация карты с помощью Leaflet
+var map = L.map('map').setView([53.9006, 27.5590], 7); // Минск
+
+document.addEventListener('DOMContentLoaded', function () {    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
@@ -47,29 +48,29 @@ document.addEventListener('DOMContentLoaded', function () {
         convertToCoords('end', false);
     });
 
-    window.convertToCoords = function (inputId, isStart) {
-        var inputValue = document.getElementById(inputId).value;
-        if (inputValue && !inputValue.startsWith('Координаты:')) {
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(inputValue)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        var coords = [data[0].lat, data[0].lon];
-                        if (isStart) {
-                            startCoords = coords;
-                        } else {
-                            endCoords = coords;
-                        }
-                        updateRoute();
-                    } else {
-                        alert('Не удалось найти координаты для указанного адреса.');
-                    }
-                })
-                .catch(err => {
-                    console.error('Ошибка при запросе координат:', err);
-                });
-        }
-    }
+    // window.convertToCoords = function (inputId, isStart) {
+    //     var inputValue = document.getElementById(inputId).value;
+    //     if (inputValue && !inputValue.startsWith('Координаты:')) {
+    //         fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(inputValue)}`)
+    //             .then(response => response.json())
+    //             .then(data => {
+    //                 if (data.length > 0) {
+    //                     var coords = [data[0].lat, data[0].lon];
+    //                     if (isStart) {
+    //                         startCoords = coords;
+    //                     } else {
+    //                         endCoords = coords;
+    //                     }
+    //                     updateRoute();
+    //                 } else {
+    //                     alert('Не удалось найти координаты для указанного адреса.');
+    //                 }
+    //             })
+    //             .catch(err => {
+    //                 console.error('Ошибка при запросе координат:', err);
+    //             });
+    //     }
+    // }
     
 
     window.updateRoute = function () {

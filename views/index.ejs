@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="icon" href="img/logo.svg" type="image/x-icon"/>
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('input, select').forEach(element => {
+    element.addEventListener('input', calculateCosts);
+    element.addEventListener('change', calculateCosts);
+  });
+});
+</script>
 </head>
 <body>
     <div>
@@ -34,13 +42,18 @@
                     <div style="z-index: 100;" id="start-suggestions" class="suggestions"></div>
                 </div>
                 <br><br>
+                
+<div class="autocomplete-container">
+    <label for="intermediate">Промежуточные точки (через запятую):</label>
+    <input type="text" id="intermediate" placeholder="Введите адреса через запятую" autocomplete="off">
+</div>
+<br>
                 <div class="autocomplete-container">
                     <label for="end">Пункт выгрузки:</label>
                     <input type="text" id="end" placeholder="Введите адрес конечной точки" required autocomplete="off">
                     <div style="z-index: 80;" id="end-suggestions" class="suggestions"></div>
                 </div>
                 <br>
-                <button style="width: 200px;" type="submit">Рассчитать</button>
             </form>
         </div>
 
@@ -72,12 +85,14 @@
                     <thead><tr>
                         <th>Пункт загрузки</th>
                         <th>Пункт выгрузки</th>
+                        <th>Промежуточные точки</th>
                     </tr></thead>
                     <tbody>
                         <% routes.forEach(route => { %>
                             <tr>
                                 <td><%= route.StartLocation %></td>
                                 <td><%= route.EndLocation %></td>
+                                <td><%= (route.IntermediatePoints || []).join(" → ") %></td>
                             </tr>
                         <% }) %>
                     </tbody>
@@ -112,15 +127,14 @@
                     useButton.addEventListener('click', () => {
     if (!selectedRow) return;
 
-    // Получаем данные из выделенной строки
     const loadingPoint = selectedRow.cells[0].textContent.trim();
     const unloadingPoint = selectedRow.cells[1].textContent.trim();
+    const intermediatePoints = selectedRow.cells[2].textContent.trim();
 
-    // Заполняем поля ввода
     startInput.value = loadingPoint;
     endInput.value = unloadingPoint;
+    document.getElementById('intermediate').value = intermediatePoints;
 
-    // Конвертируем адреса в координаты и обновляем маршрут
     convertToCoords('start', true);
     convertToCoords('end', false);
     closeModal();
@@ -200,53 +214,23 @@
             </div>
             <div style="margin-top: 11px;">
                 <label class="options-input">Стоимость топлива (за литр)</label>
-                <input class="options-input" type="number" id="fuel-cost" value="0.00" step="0.01">
+                <input class="options-input" type="number" id="fuel-cost" value="0.00" step="0.01" min="0" oninput="this.value = (Math.abs(this.value))">
             </div>
             <div>
                 <label class="options-input">Стоимость платных дорог</label>
-                <input class="options-input" type="number" id="toll-cost" value="0.00" step="0.01">
+                <input class="options-input" type="number" id="toll-cost" value="0.00" step="0.01" min="0" oninput="this.value = (Math.abs(this.value))">
             </div>
         </div>
         <div class="options">
             <div>
                 <label class="options-input">Стоимость стоянок</label>
-                <input class="options-input" type="number" id="parking-cost" value="0.00" step="0.01">
+                <input class="options-input" type="number" id="parking-cost" value="0.00" step="0.01" min="0" oninput="this.value = (Math.abs(this.value))">
             </div>
             <div style="padding-top: 18px;">
                 <label class="options-input">Питание водителя</label>
-                <input class="options-input" type="number" id="driver-food" value="0.00" step="0.01">
+                <input class="options-input" type="number" id="driver-food" value="0.00" step="0.01" min="0" oninput="this.value = (Math.abs(this.value))">
             </div>
         </div>
-            <div class="history-table">
-                <table cellspacing=0>
-                    <thead><tr>
-                        <th>Дата</th>
-                        <th>Загрузка</th>
-                        <th>Выгрузка</th>
-                        <th>Расстояние</th>
-                        <th>Стоимость</th>
-                        <th>Автомобиль</th>
-                    </tr></thead>
-                    <tbody>
-                        <% history.forEach(history => { %>
-                            <tr>
-                                <td><%= new Date(history.RequestDate).toLocaleString('ru-RU', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                }) %></td>
-                                <td><%= history.StartPoint %></td>
-                                <td><%= history.EndPoint %></td>
-                                <td><%= history.Distance %></td>
-                                <td><%= history.TotalCost %></td>
-                                <td><%= history.UsedVehicle %></td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
-            </div>
     </div>
 
     <h3>Готовые расчеты:</h3>
@@ -256,7 +240,7 @@
     <div>
         <button onclick="exportDoc()">Экспортировать</button>
         <select id="export_select">
-            <option value="doc">.doc</option>
+            <!-- <option value="doc">.doc</option> -->
             <option value="docx">.docx</option>
             <!-- <option value="pdf">.pdf</option> -->
         </select>
@@ -289,22 +273,18 @@
 
             if (selectedOption === 'doc') 
             {
-                console.log(selectedOption)
                 exportToDoc(docContent);
             } 
             else if (selectedOption === 'docx') 
             {
-                console.log(selectedOption)
                 exportToDocx(docContent);
             } 
             else if (selectedOption === 'pdf') 
             {
-                console.log(selectedOption)
                 exportToPDF(docContent);
             } 
             else 
             {
-                console.log(selectedOption)
                 console.log('Неверный формат экспорта');
             }
 
@@ -410,7 +390,6 @@ async function exportToPDF(content) {
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="/js/script.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
             let distance = 0; // Расстояние в км
 
             function calculateCosts() {
@@ -421,6 +400,8 @@ async function exportToPDF(content) {
                 const driverFood = parseFloat(document.getElementById('driver-food').value) || 0;
                 const fuelUsage = parseFloat(document.getElementById('truck-dropdown').value) || 0;
 
+                distance = parseFloat(document.getElementById('total-dist').innerText);
+
                 // Проверяем, что расстояние известно
                 if (distance <= 0) {
                     document.getElementById('total-cost').innerText = '0.00';
@@ -428,21 +409,22 @@ async function exportToPDF(content) {
                 }
 
                 // Расчет стоимости топлива
-                const fuelExpenses = fuelCost * distance;
+                const select = document.getElementById('truck-dropdown');
+                const selectedOption = select.options[select.selectedIndex];
+                const text = selectedOption.textContent;
+                const match = text.match(/\(([\d.]+)\s*л\/100\s*км\)/);
+
+                carFuelUsage = parseFloat(match[1]);
+
+                const totalFuelCost = ((carFuelUsage * distance) / 100) * fuelCost;
 
                 // Общая стоимость рейса
-                const totalCost = fuelExpenses + tollCost + parkingCost + driverFood;
+                const totalCost = totalFuelCost + tollCost + parkingCost + driverFood;
 
-                // Обновляем вывод
+                // Вывод результатов на страницу
                 document.getElementById('total-cost').innerText = totalCost.toFixed(2);
                 document.getElementById('total-dist').innerText = distance.toFixed(2);
             }
-
-            // Связываем расчет с изменением значений
-            document.getElementById('distance-form').addEventListener('submit', function (e) {
-                e.preventDefault();
-                calculateCosts();
-            });
 
             // Интеграция с картой
             window.calculateDistance = function(map, startCoords, endCoords) {
@@ -476,7 +458,74 @@ async function exportToPDF(content) {
                         calculateCosts();
                     });
             };
+    </script>
+    <script>
+        async function convertToCoords(id, isStart) {
+    const address = document.getElementById(id).value;
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+    const data = await response.json();
+    if (data.length === 0) {
+        alert(`Адрес "${address}" не найден.`);
+        return;
+    }
+    const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    if (isStart) {
+        window.startCoords = coords;
+    } else {
+        window.endCoords = coords;
+    }
+
+    // Преобразуем промежуточные точки
+    const intermediates = document.getElementById('intermediate').value
+        .split(' → ')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    const intermediateCoords = [];
+
+    for (const point of intermediates) {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(point)}`);
+        const json = await res.json();
+        if (json.length > 0) {
+            intermediateCoords.push([parseFloat(json[0].lat), parseFloat(json[0].lon)]);
+        }
+    }
+
+    if (window.startCoords && window.endCoords) {
+        calculateFullRoute(window.map, window.startCoords, window.endCoords, intermediateCoords);
+    }
+}
+    </script>
+    <script>
+        window.calculateFullRoute = function (map, start, end, intermediates = []) {
+    const allPoints = [start, ...intermediates, end];
+    const coordsForAPI = allPoints.map(c => `${c[1]},${c[0]}`).join(';');
+
+    fetch(`https://router.project-osrm.org/route/v1/driving/${coordsForAPI}?overview=full&geometries=geojson`)
+        .then(response => response.json())
+        .then(routeData => {
+            if (routeData.routes.length === 0) {
+                alert('Не удалось построить маршрут.');
+                return;
+            }
+
+            const route = routeData.routes[0];
+            const routeCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+            map.eachLayer(function (layer) {
+                if (layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            const polyline = L.polyline(routeCoords, { color: 'blue' }).addTo(map);
+            map.fitBounds(polyline.getBounds());
+
+            window.distance = route.distance / 1000;
+            document.getElementById('total-dist').innerText = window.distance.toFixed(2);
+            calculateCosts();
         });
+};
     </script>
 </body>
 </html>

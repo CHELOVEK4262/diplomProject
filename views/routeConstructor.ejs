@@ -183,6 +183,13 @@
   </style>
 </head>
 <body>
+  <div style="text-align: right; margin-bottom: 10px; position: fixed; width: 98vw; z-index: 2000; padding-top: 10px;">
+    <form action="/admin">
+        <button type="submit" style="padding: 6px 12px; background-color: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Вернуться в админ-панель
+        </button>
+    </form>
+</div>
   <div class="left-panel" id="leftPanel" style="z-index: 2000;">
     <button id="addRouteBtn" style="
     margin-bottom: 10px;
@@ -219,7 +226,7 @@
     </table>
   </div>
 
-  <button class="toggle-btn" id="toggleBtn" title="Свернуть">⮜</button>
+  <button class="toggle-btn" id="toggleBtn" title="Свернуть" style="z-index: 3000;">⮜</button>
 
   <div class="map-container">
     <div id="map"></div>
